@@ -1,0 +1,48 @@
+- hosts: localhost
+  vars_prompt:
+  - name: container_name
+    prompt: "Enter Docker Container Name :"
+    private: no
+
+  tasks:
+  - name: "pip"
+    pip:
+      name: "docker"
+
+  - name: "Installing Docker package"
+    package:
+      name: "docker-ce"
+    ignore_errors: yes
+
+  - name: "Starting Docker Services"
+    service:
+      name: "docker"
+      state: started
+
+  - name: "Pulling Docker Image"
+    docker_image:
+      name: "httpd"
+      source: pull
+
+  - name: "Deploying WebPages"
+    copy:
+      src: "first.html"
+      dest: "/var/www/html"
+
+  - name: "Launching {{ container_name }} Container"
+    docker_container:
+      name: "{{ container_name }}"
+      image: "httpd"
+      volumes: "/var/www/html/:/usr/local/apache2/htdocs/"
+
+    register: docker_info
+
+  - debug:
+       var: docker_info.ansible_facts.docker_container.NetworkSettings.IPAddress 
+   
+  - name: "Retriveing IP dynamically and updating in inventory"
+    template:
+       src: "dockerip.txt"
+       dest: "/root/ip.txt"
+
+
